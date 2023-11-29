@@ -18,6 +18,24 @@ async function getAllProducts() {
   }
 }
 
+async function getProductById(id) {
+  const bearerToken = await commerceToolsApi.getAccessToken();
+  try {
+    const response = await axios.get(URL_GET_PRODUCTS, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      params: {
+        where: `id="${id}"`,
+      },
+    });
+    return response.data.results || [];
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 module.exports = {
   getAllProducts,
+  getProductById,
 };

@@ -6,4 +6,8 @@ router.get("/", function (req, res, next) {
   controller.getAllProducts(req, res);
 });
 
+router.get("/:id", function (req, res, next) {
+  controller.getProductById(req, res);
+});
+
 module.exports = router;
