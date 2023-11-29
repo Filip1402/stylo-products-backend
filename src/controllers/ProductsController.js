@@ -8,10 +8,93 @@ async function getAllProducts(req, res) {
 async function getProductById(req, res) {
   const product = await service.getProductById(req.params.id);
   if (product != undefined) {
-    if (product.length > 0) {
-      return res.status(200).json(product[0]);
-    } else {
-      return res.status(404).json({ error: "Product doesn't exist" });
+    try {
+      const productJSON = product[0];
+      const productId = productJSON.id;
+      const manufacturer =
+        productJSON.masterData.current.name["en-US"].split(" ")[0];
+      const productModel = productJSON.masterData.current.name["en-US"]
+        .split(" ")
+        .splice(1)
+        .join(" ");
+      const productPrice =
+        productJSON.masterData.staged.masterVariant.prices[0].value.centAmount /
+        100;
+
+      const productType = await service.getProductType(
+        productJSON.productType.id
+      );
+
+      const categories = await Promise.all(
+        productJSON.masterData.current.categories.map(async (category) => {
+          return await service.getCategoryById(category.id);
+        })
+      );
+
+      let variants = productJSON.masterData.current.variants.map((v) => {
+        return {
+          sku: v.sku,
+          color: v.attributes[1].value,
+          images: v.images.map((image) => image.url),
+          size: v.attributes[0].value[0],
+          quantity: v.availability.availableQuantity,
+        };
+      });
+
+      variants.unshift({
+        sku: productJSON.masterData.staged.masterVariant.sku,
+        size: productJSON.masterData.staged.masterVariant.attributes[0]
+          .value[0],
+        quantity:
+          productJSON.masterData.staged.masterVariant.availability
+            .availableQuantity,
+        color: productJSON.masterData.staged.masterVariant.attributes[1].value,
+        images: productJSON.masterData.staged.masterVariant.images.map(
+          (image) => image.url
+        ),
+      });
+
+      const modified = variants.map((item) => {
+        const lastIndex = item.sku.lastIndexOf("-");
+        const modifiedSku = item.sku.substring(0, lastIndex);
+        return { ...item, sku: modifiedSku };
+      });
+
+      const variantsResults = modified.reduce((acc, item) => {
+        const existingSku = acc.find((entry) => entry.sku === item.sku);
+        if (existingSku) {
+          existingSku.sizes.push({
+            size: item.size,
+            quantity: item.quantity,
+          });
+        } else {
+          acc.push({
+            sku: item.sku,
+            color: item.color,
+            images: item.images,
+            sizes: [{ size: item.size, quantity: item.quantity }],
+          });
+        }
+        return acc;
+      }, []);
+
+      const productDetailsJSON = {
+        id: productId,
+        manufacturer: manufacturer,
+        model: productModel,
+        price: productPrice,
+        type: productType,
+        categories: categories,
+        variants: variantsResults,
+      };
+
+      if (product.length > 0) {
+        return res.status(200).json(productDetailsJSON);
+      } else {
+        return res.status(404).json({ error: "Product doesn't exist" });
+      }
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch product details" });
     }
   } else {
     return res.status(404).json({ error: "Invalid ID format" });
