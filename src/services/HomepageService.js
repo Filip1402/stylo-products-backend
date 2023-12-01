@@ -1,4 +1,6 @@
 const axios = require("axios");
+const {getProductForHomepage} = require("./ProductsService");
+const {getCategoryById} = require("./CategoriesService");
 
 const HOMEPAGE_ID = "31LZZc1fP6kzclDO40Udfz";
 const URL_GET_ENTRY = `${process.env.CONTENTFUL_API_BASE_URL}/spaces/${process.env.CONTENTFUL_API_SPACEID}/entries/`;
@@ -34,14 +36,23 @@ async function getContentfulHomepageData() {
     const response = await axios.get(URL_GET_ENTRY + GET_HOMEPAGE_PARAMS, config);
     const imageUrls = getImagesJson(response);
     const productIds = getProductIds(response);
-    return productIds;
+    return [imageUrls, productIds.map(product => product.id)];
   } catch (err) {
     console.error(err);
   }
 }
 
+async function getProducts(productIds) {
+  return Promise.all(productIds.map(id => getProductForHomepage(id)));
+}
+
 async function getHomepage() {
-  return getContentfulHomepageData();
+  const [imageUrls, productIds] = await getContentfulHomepageData();
+  const products = await getProducts(productIds);
+  return {
+    images: imageUrls,
+    products: products
+  }
 }
 
 module.exports = {
