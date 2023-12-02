@@ -6,6 +6,10 @@ router.get("/", function (req, res, next) {
   controller.getAllProducts(req, res);
 });
 
+router.get("/filter", function (req, res, next) {
+  controller.getFilteredProducts(req, res);
+});
+
 router.get("/:id", function (req, res, next) {
   controller.getProductById(req, res);
 });

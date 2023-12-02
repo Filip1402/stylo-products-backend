@@ -2,7 +2,7 @@ const service = require("../services/ProductsService");
 
 async function getAllProducts(req, res) {
   const products = await service.getAllProducts();
-  res.json(products);
+  return res.json(products);
 }
 
 async function getProductById(req, res) {
@@ -112,7 +112,20 @@ async function getProductById(req, res) {
   }
 }
 
+async function getFilteredProducts(req, res) {
+  const { category, size, color } = req.query;
+  try {
+    const products = await service.getFilteredProducts(category, size, color);
+    return res.status(200).json(products);
+  } catch (err) {
+    return res
+      .status(404)
+      .json({ error: "Parameters not entered or entered incorrectly." });
+  }
+}
+
 module.exports = {
   getAllProducts,
   getProductById,
+  getFilteredProducts,
 };
