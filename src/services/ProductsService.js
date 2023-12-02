@@ -1,32 +1,81 @@
 const axios = require("axios");
-const productsAPI = require("../utils/CommerceToolsApiClient");
-const categoriesAPI = require("../utils/CommerceToolsApiClient");
-
-const URL_GET_PRODUCTS = `${process.env.CONTENTFUL_API_BASE_URL}/spaces/${process.env.CONTENTFUL_API_SPACEID}/entries`;
-const URL_GET_PRODUCT = `${productsAPI.apiURLBase}/${productsAPI.projectKey}/product-projections/search`;
-const product_content_type = "commercetoolsProduct";
+const commerceToolsApi = require("../utils/CommerceToolsApiClient");
+const URL_GET_PRODUCTS = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/products`;
+const URL_GET_PRODUCT_TYPE = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-types`;
+const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/categories`;
+const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 
 async function getAllProducts() {
   try {
-    const token = process.env.CONTENTFUL_DELIVERY_API_ACCESS_TOKEN;
+    const bearerToken = await commerceToolsApi.getAccessToken();
     const response = await axios.get(URL_GET_PRODUCTS, {
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: {
-        content_type: product_content_type,
+        Authorization: `Bearer ${bearerToken}`,
       },
     });
 
-    return response.data.items;
+    return response.data.results || [];
   } catch (err) {
     console.error(err);
   }
 }
 
+async function getProductById(id) {
+  const bearerToken = await commerceToolsApi.getAccessToken();
+  try {
+    const response = await axios.get(URL_GET_PRODUCTS, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      params: {
+        where: `id="${id}"`,
+      },
+    });
+    return response.data.results || [];
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function getProductType(id) {
+  const bearerToken = await commerceToolsApi.getAccessToken();
+  try {
+    const response = await axios.get(URL_GET_PRODUCT_TYPE, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      params: {
+        where: `id="${id}"`,
+      },
+    });
+    return response.data.results[0].name;
+  } catch (err) {
+    console.error(err);
+    return "Couldn't retrieve type";
+  }
+}
+
+async function getCategoryById(id) {
+  const bearerToken = await commerceToolsApi.getAccessToken();
+  try {
+    const response = await axios.get(URL_GET_CATEGORY, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      params: {
+        where: `id="${id}"`,
+      },
+    });
+    return response.data.results[0].name["en-US"];
+  } catch (err) {
+    console.error(err);
+    return "Couldn't retrieve category";
+  }
+}
+
 async function getProductForHomepage(id) {
   try {
-    const bearerToken = await productsAPI.getAccessToken();
+    const bearerToken = await commerceToolsApi.getAccessToken();
     const response = await axios.get(URL_GET_PRODUCT + `?filter=variants.sku:"${id}"`, {
       headers: {
         Authorization: `Bearer ${bearerToken}`,
@@ -46,5 +95,8 @@ async function getProductForHomepage(id) {
 
 module.exports = {
   getAllProducts,
+  getProductById,
+  getProductType,
+  getCategoryById,
   getProductForHomepage
 };
