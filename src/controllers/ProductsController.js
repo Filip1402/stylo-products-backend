@@ -54,13 +54,13 @@ async function getProductById(req, res) {
         ),
       });
 
-      const modified = variants.map((item) => {
+      const modifiedVariants = variants.map((item) => {
         const lastIndex = item.sku.lastIndexOf("-");
         const modifiedSku = item.sku.substring(0, lastIndex);
         return { ...item, sku: modifiedSku };
       });
 
-      const variantsResults = modified.reduce((acc, item) => {
+      const sortedVariants = modifiedVariants.reduce((acc, item) => {
         const existingSku = acc.find((entry) => entry.sku === item.sku);
         if (existingSku) {
           existingSku.sizes.push({
@@ -78,14 +78,25 @@ async function getProductById(req, res) {
         return acc;
       }, []);
 
+      let isAvailable = false;
+      for (const variant of sortedVariants) {
+        for (const size of variant.sizes) {
+          if (size.quantity > 0) {
+            isAvailable = true;
+            break;
+          }
+        }
+      }
+
       const productDetailsJSON = {
         id: productId,
         manufacturer: manufacturer,
         model: productModel,
+        available: isAvailable,
         price: productPrice,
         type: productType,
         categories: categories,
-        variants: variantsResults,
+        variants: sortedVariants,
       };
 
       if (product.length > 0) {
