@@ -1,9 +1,9 @@
 const axios = require("axios");
 const commerceToolsApi = require("../utils/CommerceToolsApiClient");
-
 const URL_GET_PRODUCTS = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/products`;
 const URL_GET_PRODUCT_TYPE = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-types`;
 const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/categories`;
+const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 
 async function getAllProducts() {
   try {
@@ -73,9 +73,30 @@ async function getCategoryById(id) {
   }
 }
 
+async function getProductForHomepage(id) {
+  try {
+    const bearerToken = await commerceToolsApi.getAccessToken();
+    const response = await axios.get(URL_GET_PRODUCT + `?filter=variants.sku:"${id}"`, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    });
+    let shoe = response.data.results[0];
+    return {
+      name: shoe.name["en-US"],
+      available: shoe.masterVariant.availability.isOnStock,
+      price: shoe.masterVariant.prices[0].value.centAmount / 100,
+      image: shoe.masterVariant.images[0].url
+    }
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getAllProducts,
   getProductById,
   getProductType,
   getCategoryById,
+  getProductForHomepage
 };

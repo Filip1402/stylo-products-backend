@@ -1,4 +1,5 @@
 const axios = require("axios");
+require("dotenv").config();
 
 class CommerceToolsApiClient {
   static authHost = process.env.AUTH_HOST;
