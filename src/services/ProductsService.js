@@ -232,4 +232,5 @@ module.exports = {
   getCategoryById,
   getProductForHomepage,
   getFilteredProductList,
+  getCategoryIdByName
 };
