@@ -7,6 +7,7 @@ const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.proje
 const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections`;
 
 let offset = 0;
+let offset_filtered = 0;
 
 async function getAllProducts(limit) {
   limit = parseInt(limit);
@@ -49,11 +50,15 @@ async function getAllProducts(limit) {
   }
 }
 
-async function getFilteredProductList(gender, category, size, color) {
+async function getFilteredProductList(limit, gender, category, size, color) {
+  limit = parseInt(limit);
+  if (!limit) limit = 20;
   try {
     const bearerToken = await commerceToolsApi.getAccessToken();
     let queryParams = {
       where: "",
+      limit: limit,
+      offset: offset_filtered,
     };
 
     let genderSubcategories = [];
@@ -127,12 +132,29 @@ async function getFilteredProductList(gender, category, size, color) {
 
     console.log("QUERY PARAMS: " + queryParams.where);
 
-    const response = await axios.get(URL_GET_PRODUCTS_FILTER, {
+    let response = await axios.get(URL_GET_PRODUCTS_FILTER, {
       headers: {
         Authorization: `Bearer ${bearerToken}`,
       },
       params: queryParams,
     });
+
+    if (response.data.results.length === 0) {
+      offset_filtered = 0;
+      const bearerToken = await commerceToolsApi.getAccessToken();
+      queryParams.limit = limit;
+      queryParams.offset = offset_filtered;
+      const secondResponse = await axios.get(URL_GET_PRODUCTS_FILTER, {
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+        params: queryParams,
+      });
+      response = secondResponse;
+      offset_filtered += limit;
+    } else {
+      offset_filtered += limit;
+    }
 
     let sortedResponse = [];
     response.data.results.map((product) => {

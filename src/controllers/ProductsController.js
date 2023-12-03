@@ -174,8 +174,10 @@ async function getProductById(req, res) {
 
 async function getFilteredProducts(req, res) {
   const { gender, category, size, color } = req.query;
+  const limit = req.body.limit;
   try {
     const products = await service.getFilteredProductList(
+      limit,
       gender,
       category,
       size,
