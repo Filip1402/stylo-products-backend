@@ -9,6 +9,7 @@ const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsA
 let offset = 0;
 
 async function getAllProducts(limit) {
+  limit = parseInt(limit);
   if (!limit) limit = 20;
   try {
     const bearerToken = await commerceToolsApi.getAccessToken();
