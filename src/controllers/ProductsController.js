@@ -10,6 +10,61 @@ async function getAllProducts(req, res) {
   }
 }
 
+async function getProductsList(req, res) {
+  try {
+    const limit = req.body.limit;
+    const products = await service.getAllProducts(limit);
+    let productList = [];
+    let masterVariant = {};
+    products.map((product) => {
+      console.log(product);
+      masterVariant = product.masterData.staged.masterVariant;
+      console.log("MASTER: " + masterVariant);
+      let id = product.id;
+      let manufacturer = product.masterData.current.name["en-US"].split(" ")[0];
+      let productModel = product.masterData.current.name["en-US"]
+        .split(" ")
+        .splice(1)
+        .join(" ");
+      let productPrice =
+        product.masterData.staged.masterVariant.prices[0].value.centAmount /
+        100;
+      let images = product.masterData.current.variants.map((v) =>
+        v.images.map((image) => {
+          return image.url;
+        })
+      );
+      let masterVariantImages =
+        product.masterData.staged.masterVariant.images.map((image) => {
+          return image.url;
+        });
+      let allImages = [...masterVariantImages, ...images];
+
+      let isAvailable = false;
+      for (const variant of product.masterData.current.variants) {
+        if (variant.availability.availableQuantity > 0) {
+          isAvailable = true;
+          break;
+        }
+      }
+
+      const sortedProduct = {
+        id: id,
+        manufacturer: manufacturer,
+        model: productModel,
+        price: productPrice,
+        available: isAvailable,
+        images: allImages,
+      };
+      productList.push(sortedProduct);
+    });
+    return res.status(200).json(productList);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
 async function getProductById(req, res) {
   const product = await service.getProductById(req.params.id);
   if (product != undefined) {
@@ -135,6 +190,7 @@ async function getFilteredProducts(req, res) {
 
 module.exports = {
   getAllProducts,
+  getProductsList,
   getProductById,
   getFilteredProducts,
 };
