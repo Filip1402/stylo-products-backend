@@ -6,18 +6,45 @@ const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.proj
 const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections`;
 
-async function getAllProducts() {
+let offset = 0;
+
+async function getAllProducts(limit) {
+  if (!limit) limit = 20;
   try {
     const bearerToken = await commerceToolsApi.getAccessToken();
     const response = await axios.get(URL_GET_PRODUCTS, {
       headers: {
         Authorization: `Bearer ${bearerToken}`,
       },
+      params: {
+        limit: limit,
+        offset: offset,
+      },
     });
 
-    return response.data.results || [];
+    let products = response.data.results;
+    if (products.length === 0) {
+      offset = 0;
+      const bearerToken = await commerceToolsApi.getAccessToken();
+      const secondResponse = await axios.get(URL_GET_PRODUCTS, {
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+        params: {
+          limit: limit,
+          offset: offset,
+        },
+      });
+      products = secondResponse.data.results;
+      offset += limit;
+    } else {
+      offset += limit;
+    }
+
+    return products;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 }
 

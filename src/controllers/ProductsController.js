@@ -1,8 +1,13 @@
 const service = require("../services/ProductsService");
 
 async function getAllProducts(req, res) {
-  const products = await service.getAllProducts();
-  return res.json(products);
+  try {
+    const limit = req.body.limit;
+    const products = await service.getAllProducts(limit);
+    return res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
 }
 
 async function getProductById(req, res) {
