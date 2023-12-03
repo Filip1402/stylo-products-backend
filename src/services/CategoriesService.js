@@ -1,5 +1,7 @@
 const categoriesAPI = require("../utils/CommerceToolsApiClient");
+
 const axios = require("axios");
+const {getCommercetoolsCategoryPictureUrl} = require("./EntryService");
 
 const URL_GET_CATEGORIES = `${categoriesAPI.apiURLBase}/${categoriesAPI.projectKey}/categories`;
 
@@ -18,6 +20,29 @@ async function getCategoryById(id) {
   }
 }
 
+async function getSubcategories(parentCategoryId) {
+  try {
+    const PARAMS_GET_SUBCATEGORIES = `?where=parent%28id%3D%22${parentCategoryId}%22%29`;
+    const bearerToken = await categoriesAPI.getAccessToken();
+    console.log(URL_GET_CATEGORIES + PARAMS_GET_SUBCATEGORIES)
+    const response = await axios.get(URL_GET_CATEGORIES + PARAMS_GET_SUBCATEGORIES, {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    });
+    return Promise.all(response.data.results.map(async (subcategory) => {
+      return {
+        id: subcategory.id,
+        name: subcategory.name["en-US"],
+        url: await getCommercetoolsCategoryPictureUrl(subcategory.id)
+      }
+    }));
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
-  getCategoryById
+  getCategoryById,
+  getSubcategories
 };
