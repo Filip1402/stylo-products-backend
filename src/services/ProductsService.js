@@ -261,7 +261,11 @@ async function getProductForHomepage(id) {
     let shoe = response.data.results[0];
     return {
       id: shoe.id,
-      name: shoe.name["en-US"],
+      manufacturer: shoe.name["en-US"].split(" ")[0],
+      model: shoe.name["en-US"]
+        .split(" ")
+        .splice(1)
+        .join(" "),
       available: shoe.masterVariant.availability.isOnStock,
       price: shoe.masterVariant.prices[0].value.centAmount / 100,
       image: shoe.masterVariant.images[0].url,
