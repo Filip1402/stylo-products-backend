@@ -1,8 +1,8 @@
 const axios = require("axios");
 const commerceToolsApi = require("../utils/CommerceToolsApiClient");
+const categoriesService = require("../services/CategoriesService");
 const URL_GET_PRODUCTS = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/products`;
 const URL_GET_PRODUCT_TYPE = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-types`;
-const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/categories`;
 const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections`;
 
@@ -49,39 +49,66 @@ async function getAllProducts(limit) {
   }
 }
 
-async function getCategoryIdByName(categoryName) {
-  try {
-    const bearerToken = await commerceToolsApi.getAccessToken();
-    const response = await axios.get(URL_GET_CATEGORY, {
-      headers: {
-        Authorization: `Bearer ${bearerToken}`,
-      },
-    });
-
-    let categoryId = null;
-    response.data.results.map((category) => {
-      if (category.name["en-US"].toLowerCase() === categoryName.toLowerCase()) {
-        categoryId = category.id;
-      }
-    });
-    return categoryId;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function getFilteredProductList(category, size, color) {
+async function getFilteredProductList(gender, category, size, color) {
   try {
     const bearerToken = await commerceToolsApi.getAccessToken();
     let queryParams = {
       where: "",
     };
 
-    if (category) {
-      const categoryId = await getCategoryIdByName(category);
-      if (categoryId != null) {
-        queryParams.where += `(categories(id="${categoryId}"))`;
-        usedCategoryFilter = true;
+    let genderSubcategories = [];
+    if (gender) {
+      gender = gender.charAt(0).toUpperCase() + gender.slice(1);
+      const subcategories = await categoriesService.getSubcategories(gender);
+      genderSubcategories = subcategories;
+    }
+
+    if (gender && category) {
+      switch (gender) {
+        case "Muškarci":
+          category += "M";
+          break;
+        case "Žene":
+          category += "Ž";
+          break;
+        case "Djeca":
+          category += "D";
+          break;
+      }
+      for (const subcategory of genderSubcategories) {
+        if (subcategory.name.toLowerCase() === category.toLowerCase()) {
+          const categoryId = await categoriesService.getCategoryIdByName(
+            category
+          );
+          const genderId = await categoriesService.getCategoryIdByName(gender);
+          queryParams.where += `${
+            queryParams.where.length > 0 ? " and " : ""
+          }(categories(id="${genderId}") and categories(id="${categoryId}"))`;
+        }
+      }
+    }
+
+    if (gender && !category) {
+      const genderId = await categoriesService.getCategoryIdByName(gender);
+      if (genderId != null) {
+        queryParams.where += `${
+          queryParams.where.length > 0 ? " and " : ""
+        }(categories(id="${genderId}"))`;
+      }
+    }
+
+    if (!gender && category) {
+      let suffixes = ["M", "Ž", "D"];
+      for (const suffix of suffixes) {
+        const categoryId = await categoriesService.getCategoryIdByName(
+          category + suffix
+        );
+        if (categoryId != null) {
+          queryParams.where += `${
+            queryParams.where.length > 0 ? " or " : ""
+          }(categories(id="${categoryId}"))`;
+        }
+        queryParams.where = `(${queryParams.where})`;
       }
     }
 
@@ -89,7 +116,6 @@ async function getFilteredProductList(category, size, color) {
       queryParams.where += `${
         queryParams.where.length > 0 ? " and " : ""
       }(masterVariant(attributes(name="Size" and value=${size})) or variants(attributes(name="Size" and value=${size})))`;
-      usedSizeFilter = true;
     }
 
     if (color) {
@@ -97,12 +123,9 @@ async function getFilteredProductList(category, size, color) {
       queryParams.where += `${
         queryParams.where.length > 0 ? " and " : ""
       }(masterVariant(attributes(name="Color" and value="${color}")) or variants(attributes(name="Color" and value="${color}")))`;
-      usedColorFilter = true;
     }
 
-    if (queryParams.where.length == 0) {
-      queryParams.where = "1";
-    }
+    console.log("QUERY PARAMS: " + queryParams.where);
 
     const response = await axios.get(URL_GET_PRODUCTS_FILTER, {
       headers: {
@@ -141,6 +164,7 @@ async function getFilteredProductList(category, size, color) {
       };
       sortedResponse.push(sortedProduct);
     });
+
     return sortedResponse;
   } catch (err) {
     console.error(err);
@@ -232,5 +256,4 @@ module.exports = {
   getCategoryById,
   getProductForHomepage,
   getFilteredProductList,
-  getCategoryIdByName
 };
