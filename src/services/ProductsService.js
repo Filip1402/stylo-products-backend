@@ -42,7 +42,7 @@ async function getCategoryIdByName(categoryName) {
   }
 }
 
-async function getFilteredProducts(category, size, color) {
+async function getFilteredProductList(category, size, color) {
   try {
     const bearerToken = await commerceToolsApi.getAccessToken();
     let queryParams = {
@@ -51,14 +51,17 @@ async function getFilteredProducts(category, size, color) {
 
     if (category) {
       const categoryId = await getCategoryIdByName(category);
-      if (categoryId != null)
+      if (categoryId != null) {
         queryParams.where += `(categories(id="${categoryId}"))`;
+        usedCategoryFilter = true;
+      }
     }
 
     if (size) {
       queryParams.where += `${
         queryParams.where.length > 0 ? " and " : ""
       }(masterVariant(attributes(name="Size" and value=${size})) or variants(attributes(name="Size" and value=${size})))`;
+      usedSizeFilter = true;
     }
 
     if (color) {
@@ -66,6 +69,7 @@ async function getFilteredProducts(category, size, color) {
       queryParams.where += `${
         queryParams.where.length > 0 ? " and " : ""
       }(masterVariant(attributes(name="Color" and value="${color}")) or variants(attributes(name="Color" and value="${color}")))`;
+      usedColorFilter = true;
     }
 
     if (queryParams.where.length == 0) {
@@ -79,7 +83,37 @@ async function getFilteredProducts(category, size, color) {
       params: queryParams,
     });
 
-    return response.data.results;
+    let sortedResponse = [];
+    response.data.results.map((product) => {
+      let id = product.id;
+      let manufacturer = product.name["en-US"].split(" ")[0];
+      let productModel = product.name["en-US"].split(" ").splice(1).join(" ");
+      let productPrice = product.masterVariant.prices[0].value.centAmount / 100;
+      let images = product.variants.map((v) =>
+        v.images.map((image) => {
+          return image.url;
+        })
+      );
+
+      let isAvailable = false;
+      for (const variant of product.variants) {
+        if (variant.availability.availableQuantity > 0) {
+          isAvailable = true;
+          break;
+        }
+      }
+
+      const sortedProduct = {
+        id: id,
+        manufacturer: manufacturer,
+        model: productModel,
+        price: productPrice,
+        available: isAvailable,
+        images: images,
+      };
+      sortedResponse.push(sortedProduct);
+    });
+    return sortedResponse;
   } catch (err) {
     console.error(err);
     throw err;
@@ -168,5 +202,5 @@ module.exports = {
   getProductType,
   getCategoryById,
   getProductForHomepage,
-  getFilteredProducts,
+  getFilteredProductList,
 };

@@ -115,7 +115,11 @@ async function getProductById(req, res) {
 async function getFilteredProducts(req, res) {
   const { category, size, color } = req.query;
   try {
-    const products = await service.getFilteredProducts(category, size, color);
+    const products = await service.getFilteredProductList(
+      category,
+      size,
+      color
+    );
     return res.status(200).json(products);
   } catch (err) {
     return res
