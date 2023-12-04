@@ -5,6 +5,7 @@ const URL_GET_PRODUCTS = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.proj
 const URL_GET_PRODUCT_TYPE = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-types`;
 const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections`;
+const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/categories`;
 
 let offset = 0;
 let offset_filtered = 0;
