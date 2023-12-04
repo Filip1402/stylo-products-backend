@@ -5,6 +5,7 @@ const URL_GET_PRODUCTS = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.proj
 const URL_GET_PRODUCT_TYPE = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-types`;
 const URL_GET_PRODUCT = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections/search`;
 const URL_GET_PRODUCTS_FILTER = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/product-projections`;
+const URL_GET_CATEGORY = `${commerceToolsApi.apiURLBase}/${commerceToolsApi.projectKey}/categories`;
 
 let offset = 0;
 let offset_filtered = 0;
@@ -168,11 +169,19 @@ async function getFilteredProductList(limit, gender, category, size, color) {
         })
       );
 
-      let isAvailable = false;
-      for (const variant of product.variants) {
-        if (variant.availability.availableQuantity > 0) {
-          isAvailable = true;
-          break;
+      let masterVariantImages = product.masterVariant.images.map((image) => {
+        return image.url;
+      });
+      let allImages = [...masterVariantImages, ...images];
+
+      let isAvailable =
+        product.masterVariant.availability.availableQuantity > 0;
+      if (!isAvailable) {
+        for (const variant of product.variants) {
+          if (variant.availability.availableQuantity > 0) {
+            isAvailable = true;
+            break;
+          }
         }
       }
 
@@ -182,7 +191,7 @@ async function getFilteredProductList(limit, gender, category, size, color) {
         model: productModel,
         price: productPrice,
         available: isAvailable,
-        images: images,
+        images: allImages,
       };
       sortedResponse.push(sortedProduct);
     });
@@ -262,17 +271,20 @@ async function getProductForHomepage(id) {
     return {
       id: shoe.id,
       manufacturer: shoe.name["en-US"].split(" ")[0],
-      model: shoe.name["en-US"]
-        .split(" ")
-        .splice(1)
-        .join(" "),
-      available: shoe.masterVariant.availability.isOnStock,
+      model: shoe.name["en-US"].split(" ").splice(1).join(" "),
+      available: await checkVariantAvailability(shoe),
       price: shoe.masterVariant.prices[0].value.centAmount / 100,
-      image: shoe.masterVariant.images[0].url,
+      images: [shoe.masterVariant.images[0].url],
     };
   } catch (err) {
     throw err;
   }
+}
+
+async function checkVariantAvailability(shoe) {
+  let variants = shoe.variants;
+  variants.push(shoe.masterVariant);
+  return variants.some(variant => variant.availability.isOnStock == true);
 }
 
 module.exports = {
