@@ -272,13 +272,19 @@ async function getProductForHomepage(id) {
       id: shoe.id,
       manufacturer: shoe.name["en-US"].split(" ")[0],
       model: shoe.name["en-US"].split(" ").splice(1).join(" "),
-      available: shoe.masterVariant.availability.isOnStock,
+      available: await checkVariantAvailability(shoe),
       price: shoe.masterVariant.prices[0].value.centAmount / 100,
       images: [shoe.masterVariant.images[0].url],
     };
   } catch (err) {
     throw err;
   }
+}
+
+async function checkVariantAvailability(shoe) {
+  let variants = shoe.variants;
+  variants.push(shoe.masterVariant);
+  return variants.some(variant => variant.availability.isOnStock == true);
 }
 
 module.exports = {
