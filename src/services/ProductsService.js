@@ -168,6 +168,11 @@ async function getFilteredProductList(limit, gender, category, size, color) {
         })
       );
 
+      let masterVariantImages = product.masterVariant.images.map((image) => {
+        return image.url;
+      });
+      let allImages = [...masterVariantImages, ...images];
+
       let isAvailable = false;
       for (const variant of product.variants) {
         if (variant.availability.availableQuantity > 0) {
@@ -182,7 +187,7 @@ async function getFilteredProductList(limit, gender, category, size, color) {
         model: productModel,
         price: productPrice,
         available: isAvailable,
-        images: images,
+        images: allImages,
       };
       sortedResponse.push(sortedProduct);
     });
@@ -262,10 +267,7 @@ async function getProductForHomepage(id) {
     return {
       id: shoe.id,
       manufacturer: shoe.name["en-US"].split(" ")[0],
-      model: shoe.name["en-US"]
-        .split(" ")
-        .splice(1)
-        .join(" "),
+      model: shoe.name["en-US"].split(" ").splice(1).join(" "),
       available: shoe.masterVariant.availability.isOnStock,
       price: shoe.masterVariant.prices[0].value.centAmount / 100,
       image: shoe.masterVariant.images[0].url,
