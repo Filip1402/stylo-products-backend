@@ -15,11 +15,7 @@ async function getProductsList(req, res) {
     const limit = req.body.limit;
     const products = await service.getAllProducts(limit);
     let productList = [];
-    let masterVariant = {};
     products.map((product) => {
-      console.log(product);
-      masterVariant = product.masterData.staged.masterVariant;
-      console.log("MASTER: " + masterVariant);
       let id = product.id;
       let manufacturer = product.masterData.current.name["en-US"].split(" ")[0];
       let productModel = product.masterData.current.name["en-US"]
@@ -40,11 +36,15 @@ async function getProductsList(req, res) {
         });
       let allImages = [...masterVariantImages, ...images];
 
-      let isAvailable = false;
-      for (const variant of product.masterData.current.variants) {
-        if (variant.availability.availableQuantity > 0) {
-          isAvailable = true;
-          break;
+      let isAvailable =
+        product.masterData.staged.masterVariant.availability.availableQuantity >
+        0;
+      if (!isAvailable) {
+        for (const variant of product.masterData.current.variants) {
+          if (variant.availability.availableQuantity > 0) {
+            isAvailable = true;
+            break;
+          }
         }
       }
 
