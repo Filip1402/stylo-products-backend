@@ -174,11 +174,14 @@ async function getFilteredProductList(limit, gender, category, size, color) {
       });
       let allImages = [...masterVariantImages, ...images];
 
-      let isAvailable = false;
-      for (const variant of product.variants) {
-        if (variant.availability.availableQuantity > 0) {
-          isAvailable = true;
-          break;
+      let isAvailable =
+        product.masterVariant.availability.availableQuantity > 0;
+      if (!isAvailable) {
+        for (const variant of product.variants) {
+          if (variant.availability.availableQuantity > 0) {
+            isAvailable = true;
+            break;
+          }
         }
       }
 
