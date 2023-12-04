@@ -274,7 +274,7 @@ async function getProductForHomepage(id) {
       model: shoe.name["en-US"].split(" ").splice(1).join(" "),
       available: shoe.masterVariant.availability.isOnStock,
       price: shoe.masterVariant.prices[0].value.centAmount / 100,
-      image: shoe.masterVariant.images[0].url,
+      images: [shoe.masterVariant.images[0].url],
     };
   } catch (err) {
     throw err;
