@@ -96,7 +96,7 @@ async function getProductById(req, res) {
           sku: v.sku,
           color: v.attributes[1].value,
           images: v.images.map((image) => image.url),
-          size: v.attributes[0].value[0],
+          size: v.attributes[0].value,
           quantity: v.availability.availableQuantity,
         };
       });
@@ -104,7 +104,7 @@ async function getProductById(req, res) {
       variants.unshift({
         sku: productJSON.masterData.staged.masterVariant.sku,
         size: productJSON.masterData.staged.masterVariant.attributes[0]
-          .value[0],
+          .value,
         quantity:
           productJSON.masterData.staged.masterVariant.availability
             .availableQuantity,
